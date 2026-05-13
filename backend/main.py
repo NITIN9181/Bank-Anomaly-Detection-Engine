@@ -12,9 +12,12 @@ from typing import Any
 
 from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
+from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload
 
-from database.models import SessionLocal, Transaction, create_tables
+from database.models import Anomaly, SessionLocal, Transaction, create_tables
+from detection.orchestrator import run_detection
+from llm.explainer import explain_all_new_anomalies
 
 # Configure logging
 logging.basicConfig(
@@ -165,16 +168,49 @@ async def list_transactions(
     }
 
 
-# Placeholder endpoints (will be implemented in Phase 2)
+@app.post("/api/v1/detect")
+async def trigger_detection(db: Session = Depends(get_db)) -> dict[str, Any]:
+    """
+    Trigger anomaly detection on all unprocessed transactions.
+    
+    Runs multi-layer detection (statistical + ML + duplicate) and generates
+    LLM explanations for newly flagged anomalies.
+    
+    Args:
+        db: Database session
+    
+    Returns:
+        Detection results summary with counts
+    """
+    logger.info("Manual detection triggered via API")
+    
+    # Run detection pipeline
+    new_anomalies = run_detection(db)
+    
+    # Generate explanations for new anomalies
+    explained_count = await explain_all_new_anomalies(db)
+    
+    return {
+        "processed": len(new_anomalies),
+        "new_anomalies": len(new_anomalies),
+        "explained": explained_count
+    }
+
+
 @app.get("/api/v1/anomalies")
 async def list_anomalies(
-    status: str = Query(default="flagged", description="Filter by status"),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
+    status: str = Query(
+        default="flagged",
+        description="Filter by status (flagged, resolved, false_positive)"
+    ),
+    limit: int = Query(default=50, ge=1, le=200, description="Number of results"),
+    offset: int = Query(default=0, ge=0, description="Number to skip"),
     db: Session = Depends(get_db)
 ) -> dict[str, Any]:
     """
-    List anomalies with pagination (Phase 2 implementation).
+    List anomalies with optional status filter and pagination.
+    
+    Returns anomalies with embedded transaction data and explanations.
     
     Args:
         status: Filter by anomaly status
@@ -183,62 +219,92 @@ async def list_anomalies(
         db: Database session
     
     Returns:
-        Paginated anomaly list
+        Paginated anomaly list with embedded transaction data
     """
-    # Placeholder - will be implemented in Phase 2
-    return {
-        "items": [],
-        "total": 0
-    }
-
-
-@app.post("/api/v1/detect")
-async def trigger_detection(db: Session = Depends(get_db)) -> dict[str, Any]:
-    """
-    Manually trigger anomaly detection (Phase 2 implementation).
+    # Validate status
+    valid_statuses = ["flagged", "resolved", "false_positive"]
+    if status not in valid_statuses:
+        status = "flagged"
     
-    Args:
-        db: Database session
+    # Query with eager loading of transaction relationship
+    query = db.query(Anomaly).filter(Anomaly.status == status)
+    total = query.count()
     
-    Returns:
-        Detection results summary
-    """
-    # Placeholder - will be implemented in Phase 2
+    anomalies = query.options(
+        joinedload(Anomaly.transaction)
+    ).order_by(
+        Anomaly.detected_at.desc()
+    ).offset(offset).limit(limit).all()
+    
+    # Serialize results
+    items = []
+    for a in anomalies:
+        # Get transaction via relationship
+        txn = db.query(Transaction).get(a.transaction_id)
+        
+        items.append({
+            "id": a.id,
+            "transaction": {
+                "id": txn.id if txn else None,
+                "amount": txn.amount if txn else 0.0,
+                "date": txn.date if txn else None,
+                "merchant_name": txn.merchant_name if txn else "Unknown",
+            },
+            "anomaly_type": a.anomaly_type,
+            "z_score": a.z_score,
+            "isolation_score": a.isolation_score,
+            "explanation": a.explanation,
+            "detected_at": a.detected_at.isoformat() + "Z" if a.detected_at else None,
+            "status": a.status,
+        })
+    
     return {
-        "processed": 0,
-        "new_anomalies": 0,
-        "last_processed_id": 0
+        "items": items,
+        "total": total,
+        "limit": limit,
+        "offset": offset
     }
 
 
 @app.get("/api/v1/stats")
 async def get_stats(db: Session = Depends(get_db)) -> dict[str, Any]:
     """
-    Get dashboard statistics (Phase 2 implementation).
-    
-    Args:
-        db: Database session
+    Get dashboard statistics and KPIs.
     
     Returns:
-        Dashboard statistics
+        Dashboard statistics including transaction counts, anomaly rates,
+        and top anomalous vendor
     """
-    # Get basic stats
-    total_transactions = db.query(Transaction).count()
+    # Total counts
+    total_txns = db.query(Transaction).count()
+    total_anomalies = db.query(Anomaly).count()
+    flagged = db.query(Anomaly).filter(Anomaly.status == "flagged").count()
     
-    # Get last ingestion time
-    last_transaction = db.query(Transaction).order_by(
+    # Calculate flag rate
+    flag_rate = (flagged / total_txns * 100) if total_txns > 0 else 0.0
+    
+    # Top anomalous vendor (most common anomaly type)
+    top_vendor_result = (
+        db.query(Anomaly.anomaly_type, func.count(Anomaly.id).label("count"))
+        .group_by(Anomaly.anomaly_type)
+        .order_by(func.count(Anomaly.id).desc())
+        .first()
+    )
+    top_vendor = top_vendor_result[0] if top_vendor_result else None
+    
+    # Last ingestion time (from most recent transaction)
+    last_txn = db.query(Transaction).order_by(
         Transaction.created_at.desc()
     ).first()
-    
-    last_ingestion_at = None
-    if last_transaction and last_transaction.created_at:
-        last_ingestion_at = last_transaction.created_at.isoformat() + "Z"
+    last_ingestion = None
+    if last_txn and last_txn.created_at:
+        last_ingestion = last_txn.created_at.isoformat() + "Z"
     
     return {
-        "total_transactions": total_transactions,
-        "total_anomalies": 0,  # Phase 2
-        "flag_rate_percent": 0.0,  # Phase 2
-        "top_anomalous_vendor": None,  # Phase 2
-        "last_ingestion_at": last_ingestion_at,
+        "total_transactions": total_txns,
+        "total_anomalies": total_anomalies,
+        "flag_rate_percent": round(flag_rate, 2),
+        "top_anomalous_vendor": top_vendor,
+        "last_ingestion_at": last_ingestion,
         "model_version": "isolation_forest_v1"
     }

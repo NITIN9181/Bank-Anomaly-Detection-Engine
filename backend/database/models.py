@@ -25,7 +25,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import relationship, sessionmaker
 
 from config import settings
 
@@ -132,6 +132,9 @@ class Anomaly(Base):
         nullable=False,
         index=True
     )
+    
+    # Relationship to Transaction
+    transaction = relationship("Transaction", backref="anomalies")
 
 
 # Enable foreign key constraints for SQLite
