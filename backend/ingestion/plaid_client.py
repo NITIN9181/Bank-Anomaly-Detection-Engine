@@ -43,11 +43,8 @@ class PlaidClient:
         api_client = plaid.ApiClient(configuration)
         self.client = plaid_api.PlaidApi(api_client)
         
-        # For sandbox, we'll need to create a link token and exchange it
-        # In production, this would come from user OAuth flow
-        # For now, we'll use a pre-configured sandbox access token
-        # This should be set via environment variable in production
-        self.access_token: str | None = None
+        # Set access token from settings (generated via generate_plaid_token.py)
+        self.access_token: str | None = settings.PLAID_ACCESS_TOKEN if settings.PLAID_ACCESS_TOKEN else None
         
         logger.info(f"Plaid client initialized for environment: {settings.PLAID_ENV}")
     
