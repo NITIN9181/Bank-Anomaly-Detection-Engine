@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: bank-anomaly-engine
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DATABASE_PATH
+        value: /data/anomalies.db
+      - key: ENVIRONMENT
+        value: production
+      - key: PLAID_ENV
+        value: sandbox
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    healthCheckPath: /api/v1/health

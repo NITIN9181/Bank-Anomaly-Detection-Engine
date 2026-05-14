@@ -1,12 +1,43 @@
-# Byte-compiled / optimized / DLL files
+# Backend
+backend/venv/
+backend/__pycache__/
+backend/**/*.pyc
+backend/.env
+backend/data/*.db
+backend/data/*.pkl
+backend/data/*.pkl.*
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+frontend/.vite/
+
+# Logs
+*.log
+logs/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Render
+render.yaml.bak
+
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# C extensions
 *.so
-
-# Distribution / packaging
 .Python
 build/
 develop-eggs/
@@ -20,70 +51,51 @@ parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 
-# PyInstaller
-*.manifest
-*.spec
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage reports
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.pytest_cache/
-pytestdebug.log
-
-# Environments
-.env
-.venv
-env/
+# Virtual environments
+.venv/
 venv/
 ENV/
-env.bak/
-venv.bak/
+env/
 
-# VS Code / Cursor
-.vscode/
-.cursor/
+# Database
+*.db
+*.sqlite
+*.sqlite3
 
-# AI / Coding Tools
-.claude/
-.gemini/
-.kiro/
-.qoder/
-.code-review-graph/
+# Model files
+*.pkl
+*.joblib
+*.h5
+*.pt
+*.pth
+
+
+
+.claude
+.cursor
+.gemini
+.kiro
+.qoder
+.code-review-graph
 .opencode.json
 .mcp.json
 
-# OS specific
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-
+docs
 .github
-.cursorrules
-.windsurfrules
-
 AGENTS.md
 CLAUDE.md
 GEMINI.md
 QODER.md
-docs
+.windsurfrules
+.cursorrules
+.stitch
+
+ARCHITECTURE.md
+DEPLOYMENT.md
+PHASE_4_VERIFICATION.md
+PROJECT_COMPLETE.md

@@ -19,6 +19,8 @@ from database.models import Anomaly, SessionLocal, Transaction, create_tables
 from detection.orchestrator import run_detection
 from llm.explainer import explain_all_new_anomalies
 
+from config import settings
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -33,19 +35,23 @@ app = FastAPI(
     description="Autonomous real-time reconciliation and fraud detection across banking data streams"
 )
 
-# CORS middleware configuration
-# TODO: Restrict origins in production to Vercel domain
+# CORS restricted to known domains.
+# Update origins list with your Vercel URL after first deploy.
 origins = [
     "http://localhost:3000",
     "http://localhost:5173",  # Vite default port
-    "https://*.vercel.app",
 ]
+
+# Add production Vercel domain if configured
+if settings.ENVIRONMENT == "production":
+    # Replace with your actual Vercel URL after deployment
+    origins.append("https://your-app.vercel.app")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Temporarily allow all for development
+    allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
 
