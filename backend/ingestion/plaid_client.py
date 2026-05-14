@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import time
+from datetime import datetime
 from typing import Any
 
 import plaid
@@ -91,6 +92,10 @@ class PlaidClient:
         if not self.access_token:
             raise ValueError("Access token not set. Call set_access_token() first.")
         
+        # Convert string dates to date objects for Plaid API
+        start_date_obj = datetime.strptime(start_date, "%Y-%m-%d").date()
+        end_date_obj = datetime.strptime(end_date, "%Y-%m-%d").date()
+        
         all_transactions: list[dict[str, Any]] = []
         offset = 0
         total_transactions = None
@@ -103,8 +108,8 @@ class PlaidClient:
                     # Create request with pagination
                     request = TransactionsGetRequest(
                         access_token=self.access_token,
-                        start_date=start_date,
-                        end_date=end_date,
+                        start_date=start_date_obj,
+                        end_date=end_date_obj,
                         options=TransactionsGetRequestOptions(
                             count=500,  # Max per request
                             offset=offset
