@@ -35,24 +35,18 @@ app = FastAPI(
     description="Autonomous real-time reconciliation and fraud detection across banking data streams"
 )
 
-# CORS restricted to known domains.
-# Update origins list with your Vercel URL after first deploy.
-origins = [
-    "http://localhost:3000",
-    "http://localhost:5173",  # Vite default port
-]
-
-# Add production Vercel domain if configured
-if settings.ENVIRONMENT == "production":
-    # Replace with your actual Vercel URL after deployment
-    origins.append("https://bank-anomaly-detection-engine.vercel.app")
+# CORS configuration
+# TEMPORARY: Allow all origins for debugging
+# TODO: Restrict to specific Vercel domain after confirming it works
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_credentials=False,  # Must be False when using "*"
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 
