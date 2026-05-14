@@ -45,7 +45,7 @@ origins = [
 # Add production Vercel domain if configured
 if settings.ENVIRONMENT == "production":
     # Replace with your actual Vercel URL after deployment
-    origins.append("https://your-app.vercel.app")
+    origins.append("https://bank-anomaly-detection-engine.vercel.app/")
 
 app.add_middleware(
     CORSMiddleware,
