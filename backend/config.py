@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     PLAID_CLIENT_ID: str = Field(..., description="Plaid API client ID")
     PLAID_SECRET: str = Field(..., description="Plaid API secret")
     PLAID_ENV: str = Field(default="sandbox", description="Plaid environment")
+    PLAID_ACCESS_TOKEN: str = Field(default="", description="Plaid access token for sandbox")
     NVIDIA_NIM_API_KEY: str = Field(..., description="NVIDIA NIM API key")
     DATABASE_PATH: str = Field(
         default="./anomalies.db",
