@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
 
-from database.models import Anomaly, SessionLocal, Transaction, create_tables
+from database.models import Anomaly, SessionLocal, Transaction, create_tables, AccountLink
 from detection.orchestrator import run_detection
 from llm.explainer import explain_all_new_anomalies
 
@@ -310,4 +310,78 @@ async def get_stats(db: Session = Depends(get_db)) -> dict[str, Any]:
         "top_anomalous_vendor": top_vendor,
         "last_ingestion_at": last_ingestion,
         "model_version": "isolation_forest_v1"
+    }
+
+
+@app.get("/api/v1/rings")
+async def list_fraud_rings(
+    window_hours: int = Query(24, ge=1, le=168, description="Time window in hours"),
+    db: Session = Depends(get_db)
+) -> dict[str, Any]:
+    """
+    Detect and return potential fraud rings across accounts.
+    
+    Analyzes cross-account transaction patterns to identify coordinated
+    spending that may indicate fraud rings or money laundering.
+    
+    Args:
+        window_hours: Time window to analyze (1-168 hours)
+        db: Database session
+    
+    Returns:
+        List of detected fraud rings with risk scores
+    """
+    from detection.fraud_ring import detect_fraud_ring
+    
+    rings = detect_fraud_ring(db, window_hours)
+    
+    return {
+        "items": rings,
+        "total": len(rings),
+        "window_hours": window_hours
+    }
+
+
+@app.get("/api/v1/accounts")
+async def list_accounts(db: Session = Depends(get_db)) -> dict[str, Any]:
+    """
+    List all accounts with user profiles and link counts.
+    
+    Returns:
+        List of accounts with embedded user information
+    """
+    from database.models import Account, User
+    
+    accounts = db.query(Account).all()
+    
+    items = []
+    for account in accounts:
+        # Get user
+        user = db.query(User).get(account.user_id)
+        
+        # Count links
+        link_count = (
+            db.query(AccountLink).filter(
+                (AccountLink.account_a_id == account.id) |
+                (AccountLink.account_b_id == account.id)
+            ).count()
+        )
+        
+        items.append({
+            "id": account.id,
+            "account_id": account.account_id,
+            "user": {
+                "name": user.name if user else "Unknown",
+                "risk_profile": user.risk_profile if user else "medium",
+                "typical_monthly_spend": user.typical_monthly_spend if user else 0.0
+            },
+            "account_type": account.account_type,
+            "balance": account.balance,
+            "link_count": link_count,
+            "created_at": account.created_at.isoformat() + "Z" if account.created_at else None
+        })
+    
+    return {
+        "items": items,
+        "total": len(items)
     }

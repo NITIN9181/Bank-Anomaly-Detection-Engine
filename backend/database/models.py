@@ -1,7 +1,10 @@
 """
 SQLAlchemy ORM models for Bank Anomaly Detection Engine.
 
-Defines three core entities:
+Defines core entities:
+- User: Account holder with risk profile
+- Account: Bank account (checking, savings, business)
+- AccountLink: Relationships between accounts (family, business, fraud rings)
 - Transaction: Raw banking transactions from Plaid
 - VendorProfile: Aggregated statistics per merchant
 - Anomaly: Detected anomalies with explanations
@@ -32,6 +35,148 @@ from config import settings
 Base = declarative_base()
 
 
+class User(Base):
+    """
+    Account holder with spending profile and risk assessment.
+    
+    Attributes:
+        id: Primary key
+        user_id: Unique user identifier (e.g., "user_456")
+        name: User's full name
+        risk_profile: Risk classification (low, medium, high)
+        typical_monthly_spend: Expected monthly spending baseline
+        payroll_day: Day of month salary typically arrives (1-31)
+        created_at: Record creation timestamp
+    """
+    
+    __tablename__ = "users"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, unique=True, nullable=False, index=True)
+    name = Column(String, nullable=False)
+    risk_profile = Column(
+        String,
+        CheckConstraint(
+            "risk_profile IN ('low', 'medium', 'high')",
+            name="check_risk_profile"
+        ),
+        default="medium",
+        nullable=False
+    )
+    typical_monthly_spend = Column(Float, nullable=True)
+    payroll_day = Column(Integer, nullable=True)  # 1-31
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    accounts = relationship("Account", back_populates="user")
+
+
+class Account(Base):
+    """
+    Bank account with balance and type classification.
+    
+    Attributes:
+        id: Primary key
+        account_id: Unique account identifier (e.g., "acc_123")
+        user_id: Foreign key to users table
+        account_type: Account classification (checking, savings, business)
+        balance: Current account balance
+        created_at: Record creation timestamp
+    """
+    
+    __tablename__ = "accounts"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    account_id = Column(String, unique=True, nullable=False, index=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    account_type = Column(
+        String,
+        CheckConstraint(
+            "account_type IN ('checking', 'savings', 'business')",
+            name="check_account_type"
+        ),
+        nullable=False
+    )
+    balance = Column(Float, default=0.0, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    user = relationship("User", back_populates="accounts")
+    transactions = relationship("Transaction", back_populates="account")
+    
+    # Account links (many-to-many via AccountLink)
+    links_as_a = relationship(
+        "AccountLink",
+        foreign_keys="AccountLink.account_a_id",
+        back_populates="account_a"
+    )
+    links_as_b = relationship(
+        "AccountLink",
+        foreign_keys="AccountLink.account_b_id",
+        back_populates="account_b"
+    )
+
+
+class AccountLink(Base):
+    """
+    Relationship between two accounts for fraud ring detection.
+    
+    Links can represent legitimate relationships (family, business) or
+    suspicious patterns (shared device, shared IP).
+    
+    Attributes:
+        id: Primary key
+        account_a_id: First account in relationship
+        account_b_id: Second account in relationship
+        link_type: Relationship classification
+        strength: Confidence score (0.0-1.0)
+        detected_at: Link detection timestamp
+    """
+    
+    __tablename__ = "account_links"
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    account_a_id = Column(
+        Integer,
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    account_b_id = Column(
+        Integer,
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True
+    )
+    link_type = Column(
+        String,
+        CheckConstraint(
+            "link_type IN ('shared_device', 'shared_ip', 'family', 'business')",
+            name="check_link_type"
+        ),
+        nullable=False
+    )
+    strength = Column(Float, nullable=False)  # 0.0 to 1.0
+    detected_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    account_a = relationship(
+        "Account",
+        foreign_keys=[account_a_id],
+        back_populates="links_as_a"
+    )
+    account_b = relationship(
+        "Account",
+        foreign_keys=[account_b_id],
+        back_populates="links_as_b"
+    )
+
+
 class Transaction(Base):
     """
     Banking transaction record from Plaid API.
@@ -39,7 +184,7 @@ class Transaction(Base):
     Attributes:
         id: Primary key
         plaid_transaction_id: Unique Plaid transaction identifier (deduplication key)
-        account_id: Plaid account identifier
+        account_id: Foreign key to accounts table (nullable for backward compat)
         amount: Transaction amount (positive=debit, negative=credit)
         date: Transaction date in YYYY-MM-DD format
         merchant_name: Normalized merchant name
@@ -51,12 +196,20 @@ class Transaction(Base):
     
     id = Column(Integer, primary_key=True, autoincrement=True)
     plaid_transaction_id = Column(String, unique=True, nullable=False, index=True)
-    account_id = Column(String, nullable=True)
+    account_id = Column(
+        Integer,
+        ForeignKey("accounts.id", ondelete="SET NULL"),
+        nullable=True,  # Nullable for backward compatibility
+        index=True
+    )
     amount = Column(Float, nullable=False)
     date = Column(String, nullable=False)  # YYYY-MM-DD format
     merchant_name = Column(String, nullable=True, index=True)
     category = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    
+    # Relationships
+    account = relationship("Account", back_populates="transactions")
 
 
 class VendorProfile(Base):
