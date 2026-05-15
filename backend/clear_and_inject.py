@@ -1,11 +1,10 @@
 """
-Clear existing data and inject realistic test transactions.
+Clear existing data and inject advanced synthetic transactions.
 """
 
 from __future__ import annotations
 
 from database.models import Anomaly, SessionLocal, Transaction, VendorProfile
-from inject_test_anomalies import inject_test_data
 
 
 def clear_all_data():
@@ -37,6 +36,7 @@ if __name__ == "__main__":
     # Clear old data
     clear_all_data()
     
-    # Inject new realistic data
+    # Inject new advanced data
     print("\n" + "="*60)
-    inject_test_data()
+    from advanced_data_generator import generate_advanced_dataset
+    generate_advanced_dataset(days=90)

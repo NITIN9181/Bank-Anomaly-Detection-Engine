@@ -203,7 +203,49 @@ curl -X POST https://bank-anomaly-engine-latest.onrender.com/api/v1/detect
 
 ---
 
-## 🧪 Test Data
+## 🧪 Advanced Synthetic Data
+
+The system uses **production-grade synthetic data generation** with sophisticated patterns:
+
+### 🎭 User Personas
+- **Budget-Conscious Student**: Frugal spending, prefers cheap eats and public transport
+- **Young Professional**: Balanced spending across categories, occasional splurges
+- **Affluent Executive**: High-value purchases, premium brands, frequent luxury dining
+
+### 📊 Temporal Intelligence
+- **Time-of-Day Patterns**: Coffee at 7-9am, lunch at 12-2pm, dinner at 6-9pm, e-commerce at 8-10pm
+- **Day-of-Week Effects**: 1.3-1.8x weekend multipliers for restaurants and entertainment
+- **Seasonal Trends**: Holiday spending spikes, month-end bill payments
+- **Peak Hours**: Each merchant has unique peak hours (e.g., Starbucks: 7-9am, Uber: 5-6pm)
+
+### 🚨 Complex Anomaly Types (6 Categories)
+
+| Type | Pattern | Example |
+|------|---------|---------|
+| **Account Takeover** | 3-5 high-value purchases in 1-2 hours | $1,450 + $2,100 + $890 at 2-3am |
+| **Card Testing** | 5-10 micro-transactions ($1-$5) rapidly | $0.99, $1.50, $2.25 within minutes |
+| **Geographic** | Impossible travel (SF → NYC in 30 min) | Starbucks SF 8am, Best Buy NYC 8:30am |
+| **Velocity** | 15-25 transactions in one day | 20 purchases across various merchants |
+| **Volumetric** | 5-20x normal spending | Starbucks $287 (normally $4-$12) |
+| **Duplicate** | Same merchant + amount within 24hrs | Uber $18.75 twice in 3 minutes |
+
+### 📈 Statistical Rigor
+- **Normal Distributions**: Amounts follow Gaussian curves with μ = (min+max)/2, σ = (max-min)/6
+- **Compound Variance**: Weekend multipliers × holiday effects × loyalty discounts × time-of-day
+- **Frequency Modeling**: Daily (60-90 txns/90d), Weekly (10-15), Monthly (2-4), Quarterly (1-2)
+
+### 🎯 Dataset Statistics (90 days)
+- **Total Transactions**: ~243
+- **Normal**: ~203 (realistic spending patterns)
+- **Anomalous**: ~40 (sophisticated fraud patterns)
+- **Unique Merchants**: 30 (coffee, groceries, transport, shopping, utilities, entertainment)
+- **Categories**: 8 (Food & Drink, Groceries, Transportation, Shopping, Electronics, Entertainment, Utilities, Health)
+
+**See [ADVANCED_DATA.md](ADVANCED_DATA.md) for full technical details.**
+
+---
+
+## 🧪 Test Data (Old - Simple Version)
 
 The system includes realistic test data with **215 transactions** across **22 merchants**:
 
