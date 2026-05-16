@@ -21,6 +21,9 @@ from llm.explainer import explain_all_new_anomalies
 
 from config import settings
 
+# Import API routers
+from api.graph import router as graph_router
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -34,6 +37,9 @@ app = FastAPI(
     version="1.0.0",
     description="Autonomous real-time reconciliation and fraud detection across banking data streams"
 )
+
+# Register API routers
+app.include_router(graph_router, prefix="/api/v1")
 
 # CORS configuration
 # Allow localhost for development and Vercel domain for production

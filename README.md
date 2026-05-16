@@ -186,6 +186,7 @@ Dashboard: `http://localhost:3000`
 | `GET` | `/api/v1/stats` | Dashboard KPIs (counts, rates, top vendor) |
 | `GET` | `/api/v1/rings` | Detect fraud rings across accounts |
 | `GET` | `/api/v1/accounts` | List accounts with user profiles |
+| `GET` | `/api/v1/graph/network` | Network graph data (nodes, edges, rings) |
 | `POST` | `/api/v1/tests/adversarial` | Run adversarial robustness tests |
 | `GET` | `/api/v1/tests/adversarial/last` | Get cached test results |
 
@@ -246,6 +247,46 @@ The system uses **production-grade synthetic data generation** with sophisticate
 - **Categories**: 8 (Food & Drink, Groceries, Transportation, Shopping, Electronics, Entertainment, Utilities, Health)
 
 **See [ADVANCED_DATA.md](ADVANCED_DATA.md) for full technical details.**
+
+---
+
+## 🕸️ Network Graph Visualization
+
+**Interactive force-directed graph** that visualizes cross-account relationships, fraud rings, and transaction velocity patterns in real-time.
+
+### 🎯 Features
+
+| Feature | Description |
+|---------|-------------|
+| **Account Nodes** | Size by volume, color by risk, shape by type (circle/square/rounded) |
+| **Transaction Edges** | Width by count, style by risk (solid/dashed/animated) |
+| **Fraud Ring Detection** | Red pulsing nodes, animated edges, risk badges |
+| **Interactive Drill-Down** | Click node → account details, click edge → flow details |
+| **Real-Time Updates** | 10-second polling, browser tab flash on fraud ring |
+| **Advanced Filtering** | Toggle by risk level (safe/elevated/high/critical) and account type |
+
+### 🎨 Visualization
+
+```
+Force-Directed Graph (D3.js)
+├── 5 Account Nodes (3 personas)
+├── 8 Transaction Edges (cross-account flows)
+├── Fraud Ring Highlighting (coordinated spending)
+└── Interactive Controls (zoom, pan, filter)
+```
+
+### 📊 Graph Metrics
+
+- **Node Size**: `radius = sqrt(volume) / 10 + 10` (10-40px)
+- **Edge Width**: `1 + (txn_count / 10) * 4` (1-5px)
+- **Risk Colors**: Green (0-30%), Yellow (30-60%), Orange (60-80%), Red (80-100%)
+- **Force Simulation**: Link distance 100, charge -300, collision radius 30
+
+### 🚀 Access
+
+Navigate to `/network` route in the dashboard to view the interactive graph.
+
+**See [docs/FEATURE3_NETWORK_GRAPH.md](docs/FEATURE3_NETWORK_GRAPH.md) for complete documentation.**
 
 ---
 

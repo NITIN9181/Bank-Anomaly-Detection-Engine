@@ -4,9 +4,11 @@
  * Dashboard shell with fixed navbar, content area, and footer.
  */
 import React, { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 function Layout({ children }) {
   const [isLive, setIsLive] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     // Check backend health to set live status
@@ -39,6 +41,26 @@ function Layout({ children }) {
             <span className="text-lg font-bold text-slate-50 tracking-tight">
               Anomaly Engine
             </span>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="flex items-center gap-6 ml-8 mr-auto">
+            <Link
+              to="/"
+              className={`text-sm font-medium transition-colors ${
+                location.pathname === '/' ? 'text-sky-400' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Dashboard
+            </Link>
+            <Link
+              to="/network"
+              className={`text-sm font-medium transition-colors ${
+                location.pathname === '/network' ? 'text-sky-400' : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              Network Graph
+            </Link>
           </div>
 
           {/* Status */}

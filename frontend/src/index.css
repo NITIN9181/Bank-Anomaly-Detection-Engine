@@ -68,4 +68,25 @@
   .animate-in {
     animation: fadeIn 0.2s ease-out;
   }
+
+  /* Network Graph - Edge march animation for fraud rings */
+  @keyframes edgeMarch {
+    to { stroke-dashoffset: -20; }
+  }
+
+  /* Network Graph - Slide-in animation for detail panels */
+  @keyframes slide-in-panel {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  .animate-slide-in {
+    animation: slide-in-panel 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Network Graph - Node glow effect */
+  @keyframes node-glow {
+    0%, 100% { filter: drop-shadow(0 0 4px currentColor); }
+    50% { filter: drop-shadow(0 0 8px currentColor); }
+  }
 }

@@ -1,13 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import AnomalyCard from './components/AnomalyCard';
 import Layout from './components/Layout';
 import StatsBar from './components/StatsBar';
 import TransactionFeed from './components/TransactionFeed';
 import TrendModal from './components/TrendModal';
+import NetworkGraphPage from './pages/NetworkGraphPage';
 import useInterval from './hooks/useInterval';
 import { getAnomalies, getStats, getTransactions, triggerDetect } from './services/api';
 
-function App() {
+function Dashboard() {
   // State management
   const [transactions, setTransactions] = useState([]);
   const [anomalies, setAnomalies] = useState([]);
@@ -213,6 +215,15 @@ function App() {
         />
       </div>
     </Layout>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/network" element={<NetworkGraphPage />} />
+    </Routes>
   );
 }
 
