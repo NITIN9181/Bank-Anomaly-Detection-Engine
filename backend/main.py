@@ -385,3 +385,60 @@ async def list_accounts(db: Session = Depends(get_db)) -> dict[str, Any]:
         "items": items,
         "total": len(items)
     }
+
+
+@app.post("/api/v1/tests/adversarial")
+async def run_adversarial_tests(db: Session = Depends(get_db)) -> dict[str, Any]:
+    """
+    Run adversarial test suite against detection system.
+    
+    Executes 5 attack patterns to test system robustness:
+    - Evasion: Gradual amount increase
+    - Flooding: Hide anomalies in noise
+    - Spoofing: Merchant name obfuscation
+    - Temporal: Backdated transactions
+    - Velocity: Burst spending
+    
+    WARNING: This modifies database with synthetic attack data.
+    In production, this should run in an isolated transaction.
+    
+    Args:
+        db: Database session
+    
+    Returns:
+        Complete test results with robustness score and vulnerability report
+    """
+    from tests.adversarial.runner import run_all_adversarial_tests
+    
+    logger.info("Adversarial test suite triggered via API")
+    
+    # Run all tests
+    results = run_all_adversarial_tests(db)
+    
+    return {
+        "message": "Adversarial tests complete. Review results for vulnerabilities.",
+        "warning": "Tests inserted synthetic data. Consider running in isolated transaction.",
+        **results
+    }
+
+
+@app.get("/api/v1/tests/adversarial/last")
+async def get_last_test_results(db: Session = Depends(get_db)) -> dict[str, Any]:
+    """
+    Retrieve cached results from last adversarial test run.
+    
+    NOTE: Current implementation returns placeholder.
+    In production, implement caching layer (Redis) to store test results.
+    
+    Args:
+        db: Database session
+    
+    Returns:
+        Cached test results or placeholder
+    """
+    return {
+        "note": "Implement caching layer (Redis) for production",
+        "timestamp": None,
+        "results": None,
+        "recommendation": "Use POST /api/v1/tests/adversarial to run tests"
+    }

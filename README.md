@@ -184,6 +184,10 @@ Dashboard: `http://localhost:3000`
 | `GET` | `/api/v1/anomalies` | List anomalies with AI explanations |
 | `POST` | `/api/v1/detect` | Trigger detection pipeline manually |
 | `GET` | `/api/v1/stats` | Dashboard KPIs (counts, rates, top vendor) |
+| `GET` | `/api/v1/rings` | Detect fraud rings across accounts |
+| `GET` | `/api/v1/accounts` | List accounts with user profiles |
+| `POST` | `/api/v1/tests/adversarial` | Run adversarial robustness tests |
+| `GET` | `/api/v1/tests/adversarial/last` | Get cached test results |
 
 **Example Request:**
 
@@ -242,6 +246,62 @@ The system uses **production-grade synthetic data generation** with sophisticate
 - **Categories**: 8 (Food & Drink, Groceries, Transportation, Shopping, Electronics, Entertainment, Utilities, Health)
 
 **See [ADVANCED_DATA.md](ADVANCED_DATA.md) for full technical details.**
+
+---
+
+## 🛡️ Adversarial Robustness Testing
+
+**Red-team testing framework** that attacks the detection system to validate resilience against sophisticated fraud patterns. Demonstrates security mindset critical for financial systems.
+
+### 🎯 Attack Patterns (5 Tests)
+
+| Attack | Description | Pass Criteria |
+|--------|-------------|---------------|
+| **Evasion** | "Boiling the Frog" - Gradual amount increase over 30 days | ≥30% detection rate, ≤2 false positives |
+| **Flooding** | "Hide in Noise" - 1000 normal txns + 5 anomalies | Recall ≥60%, Precision ≥50%, F1 ≥0.55 |
+| **Spoofing** | "Merchant Obfuscation" - Name variations (Amaz0n, AMAZON) | 100% normalization rate |
+| **Temporal** | "Backdated Transactions" - 90-day-old dates | Reject or flag temporal inconsistency |
+| **Velocity** | "Burst Spending" - 20 txns in 60 minutes | ≥1 velocity anomaly detected |
+
+### 📊 Robustness Score
+
+Weighted average across all tests:
+- **Evasion**: 25% (most critical - gradual fraud)
+- **Flooding**: 25% (high volume scenarios)
+- **Temporal**: 20% (backdating attacks)
+- **Spoofing**: 15% (name obfuscation)
+- **Velocity**: 15% (burst spending)
+
+**Target**: ≥90% overall robustness score
+
+### 🚀 Run Tests via API
+
+```bash
+# Run all adversarial tests
+curl -X POST http://localhost:8000/api/v1/tests/adversarial
+
+# Response includes:
+# - Individual test results (passed/failed)
+# - Metrics (precision, recall, F1, detection rates)
+# - Overall robustness score (0.0-1.0)
+# - Critical vulnerabilities list
+```
+
+### 🎨 Frontend Component
+
+React component (`AdversarialTestPanel.jsx`) provides:
+- One-click test execution
+- Circular progress chart for robustness score
+- Individual test cards with metrics tables
+- Critical vulnerability banner
+- Dark theme with TailwindCSS
+
+### 🔍 What This Demonstrates
+
+1. **Security Mindset**: Proactively attacking own system
+2. **Quantitative Validation**: Pass/fail criteria with metrics
+3. **Production Readiness**: Identifies vulnerabilities before deployment
+4. **Interview Talking Point**: "Built red-team testing framework that revealed 2 critical vulnerabilities in merchant normalization and temporal validation"
 
 ---
 
