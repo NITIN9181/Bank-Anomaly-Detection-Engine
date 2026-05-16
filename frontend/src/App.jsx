@@ -6,6 +6,7 @@ import StatsBar from './components/StatsBar';
 import TransactionFeed from './components/TransactionFeed';
 import TrendModal from './components/TrendModal';
 import NetworkGraphPage from './pages/NetworkGraphPage';
+import ExplainabilityPage from './pages/ExplainabilityPage';
 import useInterval from './hooks/useInterval';
 import { getAnomalies, getStats, getTransactions, triggerDetect } from './services/api';
 
@@ -223,6 +224,7 @@ function App() {
     <Routes>
       <Route path="/" element={<Dashboard />} />
       <Route path="/network" element={<NetworkGraphPage />} />
+      <Route path="/anomalies/:id/explain" element={<ExplainabilityPage />} />
     </Routes>
   );
 }

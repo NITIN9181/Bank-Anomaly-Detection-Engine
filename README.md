@@ -24,7 +24,7 @@ A production-grade anomaly detection system that monitors banking transactions i
 ### ✨ Key Highlights
 
 - 🤖 **Dual-Layer Detection**: Statistical (Z-Score) + ML (Isolation Forest) for comprehensive coverage
-- 🧠 **AI Explanations**: NVIDIA NIM LLM generates natural language descriptions of anomalies
+- 🧠 **Interactive AI Explanations**: Feature-level contribution tracking and "What-If" simulation
 - ⚡ **Real-Time Dashboard**: Live updates every 5 seconds with interactive trend charts
 - 🔄 **Autonomous Ingestion**: Automatic Plaid API polling every 2 minutes
 - 📊 **Realistic Data**: 215+ synthetic transactions across 22 merchants with 6 subtle anomalies
@@ -98,11 +98,11 @@ graph LR
 ### Dashboard Overview
 ![Dashboard](https://via.placeholder.com/800x450/1a1a2e/ffffff?text=Dashboard+Screenshot)
 
-### Anomaly Detection
-![Anomalies](https://via.placeholder.com/800x450/1a1a2e/ffffff?text=Anomaly+Cards+Screenshot)
+### Interactive Explainability 2.0
+![Explainability](https://via.placeholder.com/800x450/1a1a2e/ffffff?text=Explainability+Panel+Screenshot)
 
-### Vendor Trend Analysis
-![Trends](https://via.placeholder.com/800x450/1a1a2e/ffffff?text=Trend+Chart+Screenshot)
+### Anomaly Detection & Network Graph
+![Anomalies](https://via.placeholder.com/800x450/1a1a2e/ffffff?text=Network+Graph+Screenshot)
 
 ---
 
@@ -247,6 +247,20 @@ The system uses **production-grade synthetic data generation** with sophisticate
 - **Categories**: 8 (Food & Drink, Groceries, Transportation, Shopping, Electronics, Entertainment, Utilities, Health)
 
 **See [ADVANCED_DATA.md](ADVANCED_DATA.md) for full technical details.**
+
+---
+
+## 🔍 Interactive Explainability 2.0
+
+Move beyond black-box ML alerts with deterministic explainability.
+
+### 🎯 Features
+| Module | Description |
+|--------|-------------|
+| **Confidence Gauge** | Layer-agreement logic calculates 0-100% confidence. |
+| **Feature Contributions** | Categorical bar chart showing exactly which variables triggered the alert. |
+| **Recommended Actions** | Rule-based engine outputs prioritized steps (e.g. "Review with Vendor"). |
+| **What-If Simulator** | Drag sliders to see how changes to amount/velocity affect the model's confidence. |
 
 ---
 

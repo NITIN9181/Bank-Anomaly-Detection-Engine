@@ -285,6 +285,13 @@ class Anomaly(Base):
         nullable=False,
         index=True
     )
+    explanation_confidence = Column(Float, default=0.0)
+    feature_contributions = Column(Text, nullable=True) # store as JSON string
+    recommended_actions = Column(Text, nullable=True) # store as JSON string
+    analyst_feedback = Column(Text, nullable=True)
+    feedback_score = Column(Integer, default=0)
+    action_taken = Column(String, nullable=True)
+    explanation_generated_at = Column(DateTime, nullable=True)
     
     # Relationship to Transaction
     transaction = relationship("Transaction", backref="anomalies")

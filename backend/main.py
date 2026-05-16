@@ -23,6 +23,7 @@ from config import settings
 
 # Import API routers
 from api.graph import router as graph_router
+from api.explainability import router as explain_router
 
 # Configure logging
 logging.basicConfig(
@@ -40,6 +41,7 @@ app = FastAPI(
 
 # Register API routers
 app.include_router(graph_router, prefix="/api/v1")
+app.include_router(explain_router, prefix="/api/v1")
 
 # CORS configuration
 # Allow localhost for development and Vercel domain for production
@@ -265,6 +267,7 @@ async def list_anomalies(
             "explanation": a.explanation,
             "detected_at": a.detected_at.isoformat() + "Z" if a.detected_at else None,
             "status": a.status,
+            "explanation_confidence": getattr(a, "explanation_confidence", 0.0),
         })
     
     return {

@@ -4,6 +4,7 @@
  * Dark theme card for displaying flagged financial anomalies.
  */
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 const BADGE_CONFIG = {
   volumetric: {
@@ -27,7 +28,7 @@ const BADGE_CONFIG = {
 };
 
 function AnomalyCard({ anomaly, onViewTrend }) {
-  const { transaction, anomaly_type, z_score, isolation_score, explanation } = anomaly;
+  const { transaction, anomaly_type, z_score, isolation_score, explanation, explanation_confidence, id } = anomaly;
   const badge = BADGE_CONFIG[anomaly_type] || BADGE_CONFIG.volumetric;
 
   const formatAmount = (amount) => {
@@ -87,6 +88,11 @@ function AnomalyCard({ anomaly, onViewTrend }) {
               iso={isolation_score.toFixed(3)}
             </span>
           )}
+          {explanation_confidence > 0 && (
+            <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              {(explanation_confidence * 100).toFixed(0)}% Confident
+            </span>
+          )}
         </div>
       </div>
 
@@ -100,13 +106,19 @@ function AnomalyCard({ anomaly, onViewTrend }) {
       )}
 
       {/* Footer */}
-      <div className="px-5 py-3 border-t border-slate-700/50">
+      <div className="px-5 py-3 border-t border-slate-700/50 flex gap-2">
         <button
           onClick={onViewTrend}
-          className="w-full px-4 py-2 text-sm font-medium text-slate-300 border border-slate-600 rounded-lg hover:bg-slate-700 hover:text-slate-100 hover:border-slate-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+          className="flex-1 px-3 py-2 text-sm font-medium text-slate-300 border border-slate-600 rounded-lg hover:bg-slate-700 hover:text-slate-100 hover:border-slate-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
         >
-          View Trend →
+          View Trend
         </button>
+        <Link
+          to={`/anomalies/${id}/explain`}
+          className="flex-1 flex justify-center items-center px-3 py-2 text-sm font-medium text-slate-50 bg-sky-600 border border-sky-500 rounded-lg hover:bg-sky-500 hover:border-sky-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+        >
+          View Analysis →
+        </Link>
       </div>
     </div>
   );

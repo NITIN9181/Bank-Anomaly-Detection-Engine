@@ -29,9 +29,14 @@ The Bank Anomaly Detection Engine is an autonomous, AI-native reconciliation sys
                         └─────────────────┘
                                 │
 ┌─────────────────┐     ┌─────────────────┐
-│   LLM Explainer │────▶│   Anomalies     │
-│   (NVIDIA NIM)  │     │   (SQLite)      │
+│   LLM Explainer │────▶│ Explainability  │
+│   (NVIDIA NIM)  │     │ 2.0 Engine      │
 └─────────────────┘     └─────────────────┘
+                                │
+                        ┌─────────────────┐
+                        │   Anomalies     │
+                        │   (SQLite)      │
+                        └─────────────────┘
                                 │
 ┌─────────────────┐     ┌─────────────────┐
 │   FastAPI       │◄────│   React         │
@@ -48,9 +53,9 @@ The Bank Anomaly Detection Engine is an autonomous, AI-native reconciliation sys
    - Layer 1: Statistical — Z-Score > 3.0 for clear deviations
    - Layer 2: ML — Isolation Forest for structural anomalies
    - Layer 3: Duplicate — 24-hour window matching
-5. **Explanation**: NVIDIA NIM generates natural language descriptions; fallback to templates if API fails
-6. **Serving**: FastAPI exposes REST endpoints with pagination
-7. **Visualization**: React dashboard polls every 5 seconds for real-time updates
+5. **Explanation**: NVIDIA NIM generates natural language descriptions, enriched by the Explainability 2.0 engine (Confidence, Feature Contributions, Recommendations).
+6. **Serving**: FastAPI exposes REST endpoints with pagination, and specific `/explain` routes.
+7. **Visualization**: React dashboard polls every 5 seconds for real-time updates and presents interactive What-If simulators.
 
 ## Technology Decisions
 
