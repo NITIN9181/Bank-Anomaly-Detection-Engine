@@ -44,7 +44,8 @@ const NetworkGraphPage = () => {
   // ─── Data Fetching ───
   const fetchGraphData = useCallback(async () => {
     try {
-      const response = await fetch('/api/v1/graph/network?window_hours=24');
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+      const response = await fetch(`${API_URL}/graph/network?window_hours=24`);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
