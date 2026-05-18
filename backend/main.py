@@ -9,8 +9,10 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from typing import Any
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, Query, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload
@@ -111,6 +113,7 @@ async def shutdown_event() -> None:
     Application shutdown event handler.
     
     - Gracefully stops transaction ingestion scheduler
+    - Shuts down background task executor
     """
     logger.info("Shutting down Bank Anomaly Detection Engine")
     
@@ -120,6 +123,13 @@ async def shutdown_event() -> None:
         logger.info("Transaction ingestion scheduler stopped")
     except Exception as e:
         logger.error(f"Error stopping ingestion scheduler: {e}")
+    
+    # Shutdown thread pool
+    try:
+        executor.shutdown(wait=False)
+        logger.info("Background task executor stopped")
+    except Exception as e:
+        logger.error(f"Error stopping executor: {e}")
 
 
 @app.get("/")
@@ -200,32 +210,107 @@ async def list_transactions(
     }
 
 
+# Global state for detection status
+detection_status = {
+    "running": False,
+    "last_run": None,
+    "last_result": None
+}
+
+# Thread pool for background tasks
+executor = ThreadPoolExecutor(max_workers=2)
+
+
+def run_detection_background(db_session):
+    """
+    Run detection in background thread to avoid blocking the main event loop.
+    """
+    global detection_status
+    
+    try:
+        detection_status["running"] = True
+        logger.info("Background detection started")
+        
+        # Run detection pipeline
+        new_anomalies = run_detection(db_session)
+        
+        # Generate explanations (this is async but we're in a thread)
+        import asyncio
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        explained_count = loop.run_until_complete(explain_all_new_anomalies(db_session))
+        loop.close()
+        
+        result = {
+            "processed": len(new_anomalies),
+            "new_anomalies": len(new_anomalies),
+            "explained": explained_count,
+            "completed_at": datetime.utcnow().isoformat() + "Z"
+        }
+        
+        detection_status["last_result"] = result
+        detection_status["last_run"] = datetime.utcnow()
+        logger.info(f"Background detection completed: {result}")
+        
+    except Exception as e:
+        logger.error(f"Background detection failed: {e}", exc_info=True)
+        detection_status["last_result"] = {
+            "error": str(e),
+            "completed_at": datetime.utcnow().isoformat() + "Z"
+        }
+    finally:
+        detection_status["running"] = False
+        db_session.close()
+
+
 @app.post("/api/v1/detect")
-async def trigger_detection(db: Session = Depends(get_db)) -> dict[str, Any]:
+async def trigger_detection(background_tasks: BackgroundTasks) -> dict[str, Any]:
     """
     Trigger anomaly detection on all unprocessed transactions.
     
-    Runs multi-layer detection (statistical + ML + duplicate) and generates
-    LLM explanations for newly flagged anomalies.
-    
-    Args:
-        db: Database session
+    Runs detection in background to avoid timeout issues.
+    Use GET /api/v1/detect/status to check progress.
     
     Returns:
-        Detection results summary with counts
+        Immediate acknowledgment that detection has started
     """
-    logger.info("Manual detection triggered via API")
+    global detection_status
     
-    # Run detection pipeline
-    new_anomalies = run_detection(db)
+    if detection_status["running"]:
+        return {
+            "status": "already_running",
+            "message": "Detection is already in progress",
+            "started_at": detection_status.get("last_run")
+        }
     
-    # Generate explanations for new anomalies
-    explained_count = await explain_all_new_anomalies(db)
+    logger.info("Manual detection triggered via API - running in background")
+    
+    # Create a new database session for the background task
+    db = SessionLocal()
+    
+    # Submit to thread pool instead of FastAPI background tasks
+    # This prevents blocking the event loop
+    executor.submit(run_detection_background, db)
     
     return {
-        "processed": len(new_anomalies),
-        "new_anomalies": len(new_anomalies),
-        "explained": explained_count
+        "status": "started",
+        "message": "Detection started in background. Check /api/v1/detect/status for progress.",
+        "started_at": datetime.utcnow().isoformat() + "Z"
+    }
+
+
+@app.get("/api/v1/detect/status")
+async def get_detection_status() -> dict[str, Any]:
+    """
+    Get the status of the last detection run.
+    
+    Returns:
+        Detection status and results
+    """
+    return {
+        "running": detection_status["running"],
+        "last_run": detection_status["last_run"].isoformat() + "Z" if detection_status["last_run"] else None,
+        "last_result": detection_status["last_result"]
     }
 
 
