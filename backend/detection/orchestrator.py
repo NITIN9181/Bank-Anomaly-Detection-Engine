@@ -57,9 +57,10 @@ def run_detection(db: Session) -> list[Anomaly]:
     logger.info(f"Found {len(all_merchants)} unique merchants")
     
     # Step 3: Find unprocessed transactions (not in anomalies table)
-    subquery = db.query(Anomaly.transaction_id).subquery()
+    from sqlalchemy import select
+    subquery = select(Anomaly.transaction_id).subquery()
     unprocessed = db.query(Transaction).filter(
-        ~Transaction.id.in_(subquery)
+        ~Transaction.id.in_(select(subquery.c.transaction_id))
     ).all()
     
     logger.info(f"Found {len(unprocessed)} unprocessed transactions")
@@ -67,7 +68,6 @@ def run_detection(db: Session) -> list[Anomaly]:
     if not unprocessed:
         logger.info("No unprocessed transactions to analyze")
         return []
-    
     # Step 4: Process each transaction through detection layers
     new_anomalies = []
     

@@ -1,8 +1,8 @@
 import pytest
-from backend.explainability.engine import calculate_feature_contributions
-from backend.explainability.confidence import compute_confidence
-from backend.explainability.recommender import get_recommended_actions
-from backend.explainability.what_if import simulate_what_if
+from explainability.engine import calculate_feature_contributions
+from explainability.confidence import compute_confidence
+from explainability.recommender import get_recommended_actions
+from explainability.what_if import simulate_what_if
 
 def test_calculate_feature_contributions():
     transaction = {"amount": 5000, "velocity_score": 5, "merchant_rarity": 0.3}

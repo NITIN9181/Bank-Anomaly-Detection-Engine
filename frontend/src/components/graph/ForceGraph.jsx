@@ -110,23 +110,25 @@ const ForceGraph = forwardRef(({
 
     setIsSimulating(true);
 
-    // Create simulation with specified parameters
+    // Create simulation with improved spacing parameters
     const simulation = d3.forceSimulation(nodesCopy)
       .force('link', d3.forceLink(edgesCopy)
         .id(d => d.id)
-        .distance(100)
-        .strength(0.5)
+        .distance(150)  // Increased from 100 to 150
+        .strength(0.3)  // Reduced from 0.5 to 0.3 for looser connections
       )
       .force('charge', d3.forceManyBody()
-        .strength(-300)
+        .strength(-800)  // Increased from -300 to -800 for stronger repulsion
       )
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collision', d3.forceCollide()
-        .radius(30)
-        .strength(0.8)
+        .radius(50)  // Increased from 30 to 50 for more spacing
+        .strength(1.0)  // Increased from 0.8 to 1.0 for stronger collision avoidance
       )
+      .force('x', d3.forceX(width / 2).strength(0.05))  // Added gentle centering force
+      .force('y', d3.forceY(height / 2).strength(0.05))  // Added gentle centering force
       .alpha(1)
-      .alphaDecay(0.02);
+      .alphaDecay(0.015);  // Reduced from 0.02 to 0.015 for longer simulation
 
     // Update state on tick
     simulation.on('tick', () => {

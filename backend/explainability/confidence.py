@@ -14,11 +14,18 @@ def compute_confidence(detection_results: dict) -> dict:
     ml_triggered = isolation_score <= -0.15
     dup_triggered = bool(duplicate_found)
 
-    # Statistical layer confidence: sigmoid of z_score
-    stat_conf = min(0.99, 1 / (1 + math.exp(-(abs(z_score) - 3))))
+    # Statistical layer confidence: improved sigmoid that responds better to z_score changes
+    # Maps z_score to confidence: 0->0.05, 1->0.15, 2->0.35, 3->0.73, 4->0.92, 5->0.98
+    if abs(z_score) < 0.1:
+        stat_conf = 0.05
+    else:
+        stat_conf = min(0.99, 1 / (1 + math.exp(-(abs(z_score) - 3))))
     
     # ML layer confidence: based on isolation score distance from threshold
-    ml_conf = min(0.99, abs(isolation_score - (-0.15)) / 0.5)
+    if abs(isolation_score) < 0.01:
+        ml_conf = 0.05
+    else:
+        ml_conf = min(0.99, abs(isolation_score - (-0.15)) / 0.5)
     
     # Duplicate layer: binary 0 or 1
     dup_conf = 1.0 if dup_triggered else 0.0
@@ -31,7 +38,7 @@ def compute_confidence(detection_results: dict) -> dict:
         agreement_bonus = 0
     
     overall = (0.4 * stat_conf) + (0.4 * ml_conf) + (0.2 * dup_conf) + agreement_bonus
-    overall = min(0.99, overall)
+    overall = min(0.99, max(0.0, overall))
     
     return {
         "overall_confidence": round(overall, 2),

@@ -1,4 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import ForceGraph from '../components/graph/ForceGraph';
 import GraphDetailsPanel from '../components/graph/GraphDetailsPanel';
 import GraphControls from '../components/graph/GraphControls';
@@ -16,6 +18,7 @@ import GraphControls from '../components/graph/GraphControls';
  * Simulation: link distance=100, charge=-300, collision=30
  */
 const NetworkGraphPage = () => {
+  const navigate = useNavigate();
   const [graphData, setGraphData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -251,6 +254,16 @@ const NetworkGraphPage = () => {
       <header className="bg-slate-800/90 backdrop-blur-md border-b border-slate-700/60 px-6 py-3.5 z-20 relative">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
+            {/* Back Button */}
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-300 hover:text-slate-100 transition-all group"
+              title="Back to Dashboard"
+            >
+              <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+              <span className="text-sm font-medium hidden sm:inline">Back</span>
+            </button>
+            
             <div className="w-8 h-8 rounded-lg bg-sky-500/10 border border-sky-500/20 flex items-center justify-center">
               <svg className="w-4 h-4 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />

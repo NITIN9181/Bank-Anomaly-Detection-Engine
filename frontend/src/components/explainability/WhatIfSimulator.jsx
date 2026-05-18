@@ -2,17 +2,17 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { RotateCcw, Play } from 'lucide-react';
 // import { debounce } from 'lodash'; // If you have lodash, otherwise we implement a simple debounce
 
-export default function WhatIfSimulator({ anomalyId, initialFeatures }) {
+export default function WhatIfSimulator({ anomalyId, initialFeatures = {} }) {
+  // Helper to find initial values safely with fallbacks
+  const origAmount = initialFeatures.amount_deviation || initialFeatures.amount || 1000;
+  const origVelocity = initialFeatures.velocity_cluster || initialFeatures.velocity_score || 1;
+
   const [params, setParams] = useState({
-    amount: initialFeatures.amount_deviation || 1000,
-    velocity: initialFeatures.velocity_cluster || 1,
+    amount: origAmount,
+    velocity: origVelocity,
   });
   const [simResult, setSimResult] = useState(null);
   const [loading, setLoading] = useState(false);
-
-  // Helper to find initial values safely
-  const origAmount = initialFeatures.amount_deviation || 1000;
-  const origVelocity = initialFeatures.velocity_cluster || 1;
 
   const runSimulation = async (currentParams) => {
     setLoading(true);
@@ -22,11 +22,18 @@ export default function WhatIfSimulator({ anomalyId, initialFeatures }) {
         velocity: currentParams.velocity
       }).toString();
       
-      const response = await fetch(`http://localhost:8000/api/v1/anomalies/${anomalyId}/what-if?${qs}`);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+      const response = await fetch(`${API_URL}/anomalies/${anomalyId}/what-if?${qs}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       setSimResult(data);
     } catch (e) {
-      console.error(e);
+      console.error('What-if simulation error:', e);
+      setSimResult({ error: 'Failed to run simulation' });
     }
     setLoading(false);
   };
@@ -57,9 +64,19 @@ export default function WhatIfSimulator({ anomalyId, initialFeatures }) {
 
       <div className="space-y-4 mb-6">
         <div>
-          <div className="flex justify-between text-sm mb-1">
+          <div className="flex justify-between items-center text-sm mb-2">
             <span className="text-slate-300">Amount</span>
-            <span className="text-slate-100 font-mono">${params.amount}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-slate-400 text-xs">$</span>
+              <input
+                type="number"
+                value={params.amount}
+                onChange={(e) => setParams({...params, amount: parseFloat(e.target.value) || 0})}
+                className="w-24 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 font-mono text-sm focus:outline-none focus:border-sky-500"
+                step="50"
+                min="0"
+              />
+            </div>
           </div>
           <input 
             type="range" 
@@ -68,11 +85,23 @@ export default function WhatIfSimulator({ anomalyId, initialFeatures }) {
             onChange={(e) => setParams({...params, amount: parseFloat(e.target.value)})}
             className="w-full accent-sky-500"
           />
+          <div className="flex justify-between text-xs text-slate-500 mt-1">
+            <span>$0</span>
+            <span className="text-slate-400">Original: ${origAmount.toFixed(0)}</span>
+            <span>${Math.max(origAmount * 3, 5000).toFixed(0)}</span>
+          </div>
         </div>
         <div>
-          <div className="flex justify-between text-sm mb-1">
+          <div className="flex justify-between items-center text-sm mb-2">
             <span className="text-slate-300">Velocity (Tx/hr)</span>
-            <span className="text-slate-100 font-mono">{params.velocity}</span>
+            <input
+              type="number"
+              value={params.velocity}
+              onChange={(e) => setParams({...params, velocity: parseFloat(e.target.value) || 0})}
+              className="w-20 bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-100 font-mono text-sm focus:outline-none focus:border-amber-500"
+              step="0.5"
+              min="0"
+            />
           </div>
           <input 
             type="range" 
@@ -81,17 +110,28 @@ export default function WhatIfSimulator({ anomalyId, initialFeatures }) {
             onChange={(e) => setParams({...params, velocity: parseFloat(e.target.value)})}
             className="w-full accent-amber-500"
           />
+          <div className="flex justify-between text-xs text-slate-500 mt-1">
+            <span>0</span>
+            <span className="text-slate-400">Original: {origVelocity.toFixed(1)}</span>
+            <span>{Math.max(origVelocity * 3, 10).toFixed(1)}</span>
+          </div>
         </div>
       </div>
 
       {loading && <div className="text-slate-400 text-sm animate-pulse">Running simulation...</div>}
 
-      {simResult && !loading && (
+      {simResult && simResult.error && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 text-red-400 text-sm">
+          {simResult.error}
+        </div>
+      )}
+
+      {simResult && !loading && !simResult.error && (
         <div className="bg-slate-900 rounded-lg p-4 border border-slate-700 animate-fade-in">
           <div className="flex justify-between items-center mb-3">
             <span className="text-sm text-slate-400">Simulated Confidence</span>
             <span className="text-lg font-bold text-slate-100">
-              {(simResult.simulated_confidence * 100).toFixed(0)}%
+              {((simResult.simulated_confidence || 0) * 100).toFixed(0)}%
             </span>
           </div>
           

@@ -2,14 +2,21 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
-from backend.database.session import get_db
-from backend.database.models import Anomaly, Transaction
-from .engine import calculate_feature_contributions
-from .confidence import compute_confidence
-from .recommender import get_recommended_actions
-from .what_if import simulate_what_if
+from database.models import Anomaly, Transaction, SessionLocal
+from explainability.engine import calculate_feature_contributions
+from explainability.confidence import compute_confidence
+from explainability.recommender import get_recommended_actions
+from explainability.what_if import simulate_what_if
 
 router = APIRouter(prefix="/anomalies", tags=["Explainability"])
+
+def get_db():
+    """Database session dependency."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 @router.get("/{anomaly_id}/explain")
 def get_explanation(anomaly_id: int, db: Session = Depends(get_db)):
@@ -24,24 +31,44 @@ def get_explanation(anomaly_id: int, db: Session = Depends(get_db)):
     # In a real system, fetch actual vendor profile baseline stats
     vendor_profile = {"avg_amount": 100.0}
     
-    # Parse transaction to dict
+    # Parse transaction to dict with safe defaults
     tx_dict = {
-        "amount": transaction.amount,
+        "amount": transaction.amount or 0.0,
         "velocity_score": getattr(transaction, "velocity_score", 0), # Mock if not present
         "merchant_rarity": getattr(transaction, "merchant_rarity", 0),
-        "z_score": anomaly.z_score,
-        "isolation_score": anomaly.isolation_score,
+        "z_score": anomaly.z_score if anomaly.z_score is not None else 0.0,
+        "isolation_score": anomaly.isolation_score if anomaly.isolation_score is not None else 0.0,
         "is_duplicate": anomaly.anomaly_type == "duplicate"
     }
 
     confidence_data = compute_confidence(tx_dict)
-    features = calculate_feature_contributions(tx_dict, vendor_profile, anomaly.z_score, anomaly.isolation_score)
+    features = calculate_feature_contributions(
+        tx_dict, 
+        vendor_profile, 
+        tx_dict["z_score"], 
+        tx_dict["isolation_score"]
+    )
     actions = get_recommended_actions(features, confidence_data["overall_confidence"], tx_dict["is_duplicate"])
 
     detection_layers = [
-        {"layer": "z_score", "triggered": abs(anomaly.z_score) >= 3.0, "score": anomaly.z_score, "threshold": 3.0},
-        {"layer": "isolation_forest", "triggered": anomaly.isolation_score <= -0.15, "score": anomaly.isolation_score, "threshold": -0.15},
-        {"layer": "duplicate", "triggered": tx_dict["is_duplicate"], "score": None, "threshold": None}
+        {
+            "layer": "z_score", 
+            "triggered": abs(tx_dict["z_score"]) >= 3.0, 
+            "score": tx_dict["z_score"], 
+            "threshold": 3.0
+        },
+        {
+            "layer": "isolation_forest", 
+            "triggered": tx_dict["isolation_score"] <= -0.15, 
+            "score": tx_dict["isolation_score"], 
+            "threshold": -0.15
+        },
+        {
+            "layer": "duplicate", 
+            "triggered": tx_dict["is_duplicate"], 
+            "score": None, 
+            "threshold": None
+        }
     ]
 
     response = {
@@ -94,25 +121,40 @@ def get_what_if(
     velocity: Optional[float] = None,
     db: Session = Depends(get_db)
 ):
-    anomaly = db.query(Anomaly).filter(Anomaly.id == anomaly_id).first()
-    if not anomaly:
-        raise HTTPException(status_code=404, detail="Anomaly not found")
+    try:
+        anomaly = db.query(Anomaly).filter(Anomaly.id == anomaly_id).first()
+        if not anomaly:
+            raise HTTPException(status_code=404, detail="Anomaly not found")
+            
+        transaction = db.query(Transaction).filter(Transaction.id == anomaly.transaction_id).first()
+        if not transaction:
+            raise HTTPException(status_code=404, detail="Transaction not found")
         
-    transaction = db.query(Transaction).filter(Transaction.id == anomaly.transaction_id).first()
-    
-    tx_dict = {
-        "amount": transaction.amount,
-        "velocity_score": getattr(transaction, "velocity_score", 0),
-        "z_score": anomaly.z_score,
-        "isolation_score": anomaly.isolation_score,
-        "is_duplicate": anomaly.anomaly_type == "duplicate"
-    }
-    
-    sim_params = {}
-    if amount is not None: sim_params["amount"] = amount
-    if velocity is not None: sim_params["velocity"] = velocity
-    
-    vendor_profile = {"avg_amount": 100.0}
-    
-    result = simulate_what_if(tx_dict, vendor_profile, sim_params)
-    return result
+        tx_dict = {
+            "amount": transaction.amount or 0.0,
+            "velocity_score": getattr(transaction, "velocity_score", 0),
+            "z_score": anomaly.z_score if anomaly.z_score is not None else 0.0,
+            "isolation_score": anomaly.isolation_score if anomaly.isolation_score is not None else 0.0,
+            "is_duplicate": anomaly.anomaly_type == "duplicate"
+        }
+        
+        sim_params = {}
+        if amount is not None: 
+            sim_params["amount"] = amount
+        if velocity is not None: 
+            sim_params["velocity"] = velocity
+        
+        vendor_profile = {"avg_amount": 100.0}
+        
+        result = simulate_what_if(tx_dict, vendor_profile, sim_params)
+        return result
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        error_detail = {
+            "error": str(e),
+            "type": type(e).__name__,
+            "traceback": traceback.format_exc()
+        }
+        raise HTTPException(status_code=500, detail=error_detail)

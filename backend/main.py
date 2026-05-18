@@ -39,11 +39,7 @@ app = FastAPI(
     description="Autonomous real-time reconciliation and fraud detection across banking data streams"
 )
 
-# Register API routers
-app.include_router(graph_router, prefix="/api/v1")
-app.include_router(explain_router, prefix="/api/v1")
-
-# CORS configuration
+# CORS configuration - MUST be added before routers
 # Allow localhost for development and Vercel domain for production
 origins = [
     "http://localhost:3000",
@@ -59,6 +55,10 @@ app.add_middleware(
     allow_headers=["*"],
     expose_headers=["*"],
 )
+
+# Register API routers
+app.include_router(graph_router, prefix="/api/v1")
+app.include_router(explain_router, prefix="/api/v1")
 
 
 # Dependency: Database session

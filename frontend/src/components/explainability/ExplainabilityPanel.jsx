@@ -14,7 +14,8 @@ export default function ExplainabilityPanel({ anomalyId, onActionTaken }) {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const response = await fetch(`http://localhost:8000/api/v1/anomalies/${anomalyId}/explain`);
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1';
+        const response = await fetch(`${API_URL}/anomalies/${anomalyId}/explain`);
         const json = await response.json();
         setData(json);
       } catch (e) {

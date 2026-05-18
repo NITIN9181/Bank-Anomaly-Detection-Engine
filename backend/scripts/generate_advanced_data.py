@@ -34,12 +34,16 @@ PERSONAS = [
         "account_type": "checking",
         "spending_pattern": "predictable",
         "merchants": [
-            ("Whole Foods", "Groceries", 80, 150, 8),  # (merchant, category, min, max, freq/month)
-            ("Shell Gas Station", "Transportation", 40, 60, 4),
-            ("Starbucks", "Food and Drink", 5, 12, 20),
+            ("Whole Foods", "Groceries", 80, 150, 25),  # Increased frequency
+            ("Shell Gas Station", "Transportation", 40, 60, 12),
+            ("Starbucks", "Food and Drink", 5, 12, 45),
             ("Netflix", "Entertainment", 15.99, 15.99, 1),
             ("AT&T", "Utilities", 85, 95, 1),
             ("Planet Fitness", "Health", 22.99, 22.99, 1),
+            ("Target", "Shopping", 30, 120, 15),
+            ("CVS Pharmacy", "Health", 15, 50, 8),
+            ("Panera Bread", "Food and Drink", 10, 18, 12),
+            ("Spotify", "Entertainment", 9.99, 9.99, 1),
         ],
     },
     {
@@ -51,13 +55,16 @@ PERSONAS = [
         "account_type": "checking",
         "spending_pattern": "spikey",
         "merchants": [
-            ("Amazon", "Shopping", 20, 200, 12),
-            ("Starbucks", "Food and Drink", 5, 15, 25),
-            ("Uber", "Transportation", 10, 30, 15),
+            ("Amazon", "Shopping", 20, 200, 35),
+            ("Starbucks", "Food and Drink", 5, 15, 50),
+            ("Uber", "Transportation", 10, 30, 40),
             ("Adobe Creative Cloud", "Software", 54.99, 54.99, 1),
             ("Dropbox", "Software", 11.99, 11.99, 1),
-            ("Chipotle", "Food and Drink", 12, 18, 10),
-            ("Best Buy", "Electronics", 100, 500, 2),  # Occasional gear purchases
+            ("Chipotle", "Food and Drink", 12, 18, 25),
+            ("Best Buy", "Electronics", 100, 500, 5),
+            ("DoorDash", "Food and Drink", 15, 35, 30),
+            ("Shell Gas Station", "Transportation", 40, 60, 10),
+            ("Walgreens", "Health", 10, 40, 8),
         ],
     },
     {
@@ -69,13 +76,56 @@ PERSONAS = [
         "account_type": "business",
         "spending_pattern": "complex",
         "merchants": [
-            ("Amazon", "Shopping", 50, 5000, 20),  # AWS bills
+            ("Amazon", "Shopping", 50, 5000, 60),  # AWS bills - increased
             ("Comcast", "Utilities", 129.99, 129.99, 1),
-            ("AT&T", "Utilities", 250, 350, 1),  # Business plan
-            ("Whole Foods", "Groceries", 100, 300, 8),  # Office snacks
-            ("Uber", "Transportation", 15, 50, 30),  # Employee rides
-            ("Adobe Creative Cloud", "Software", 54.99, 54.99, 5),  # Team licenses
-            ("Slack", "Software", 12.50, 12.50, 10),  # Per-user fees
+            ("AT&T", "Utilities", 250, 350, 1),
+            ("Whole Foods", "Groceries", 100, 300, 20),
+            ("Uber", "Transportation", 15, 50, 80),
+            ("Adobe Creative Cloud", "Software", 54.99, 54.99, 10),
+            ("Slack", "Software", 12.50, 12.50, 25),
+            ("GitHub", "Software", 21.00, 21.00, 10),
+            ("Zoom", "Software", 14.99, 14.99, 10),
+            ("Office Depot", "Office Supplies", 50, 300, 15),
+        ],
+    },
+    {
+        "user_id": "user_emily_004",
+        "name": "Emily Watson",
+        "risk_profile": "low",
+        "typical_monthly_spend": 2800.0,
+        "payroll_day": 1,
+        "account_type": "checking",
+        "spending_pattern": "predictable",
+        "merchants": [
+            ("Trader Joe's", "Groceries", 60, 120, 20),
+            ("Chevron", "Transportation", 35, 55, 10),
+            ("Starbucks", "Food and Drink", 5, 12, 35),
+            ("Hulu", "Entertainment", 12.99, 12.99, 1),
+            ("Verizon", "Utilities", 75, 85, 1),
+            ("LA Fitness", "Health", 29.99, 29.99, 1),
+            ("Walmart", "Shopping", 25, 100, 18),
+            ("Rite Aid", "Health", 12, 45, 6),
+            ("Subway", "Food and Drink", 8, 14, 15),
+        ],
+    },
+    {
+        "user_id": "user_david_005",
+        "name": "David Kim",
+        "risk_profile": "medium",
+        "typical_monthly_spend": 4500.0,
+        "payroll_day": 15,
+        "account_type": "checking",
+        "spending_pattern": "spikey",
+        "merchants": [
+            ("Amazon", "Shopping", 25, 180, 30),
+            ("Costco", "Groceries", 100, 250, 8),
+            ("Shell Gas Station", "Transportation", 40, 65, 12),
+            ("Netflix", "Entertainment", 15.99, 15.99, 1),
+            ("T-Mobile", "Utilities", 90, 100, 1),
+            ("Chipotle", "Food and Drink", 12, 18, 20),
+            ("Home Depot", "Home Improvement", 50, 300, 6),
+            ("Uber Eats", "Food and Drink", 18, 40, 25),
+            ("Apple Store", "Electronics", 50, 400, 4),
         ],
     },
 ]
@@ -172,14 +222,14 @@ def generate_fraud_ring_transactions(
     transactions = []
     today = datetime.now().date()
     
-    # Generate 3-5 fraud ring events
-    for event_num in range(random.randint(3, 5)):
+    # Generate 8-12 fraud ring events (increased)
+    for event_num in range(random.randint(8, 12)):
         # Pick a random date
         days_ago = random.randint(1, days)
         event_date = today - timedelta(days=days_ago)
         
         # Pick a high-value merchant
-        merchant = random.choice(["Amazon", "Best Buy", "Apple Store"])
+        merchant = random.choice(["Amazon", "Best Buy", "Apple Store", "Newegg", "B&H Photo"])
         
         # All accounts hit within 5 minutes
         base_hour = random.randint(2, 5)  # Late night (suspicious)
@@ -196,6 +246,84 @@ def generate_fraud_ring_transactions(
                 category="Electronics" if merchant != "Amazon" else "Shopping",
                 created_at=datetime.utcnow()
             ))
+    
+    return transactions
+
+
+def generate_anomalous_transactions(
+    account_id: int,
+    days: int = 90
+) -> list[Transaction]:
+    """
+    Generate various types of anomalous transactions.
+    
+    Includes:
+    - Velocity anomalies (burst spending)
+    - Amount anomalies (unusually high)
+    - Duplicate transactions
+    - Geographic anomalies (unusual merchants)
+    
+    Args:
+        account_id: Database account ID
+        days: Number of days to generate
+    
+    Returns:
+        List of anomalous Transaction objects
+    """
+    transactions = []
+    today = datetime.now().date()
+    
+    # Velocity anomaly: 5 transactions in 1 hour
+    velocity_date = today - timedelta(days=random.randint(10, 30))
+    for i in range(5):
+        transactions.append(Transaction(
+            plaid_transaction_id=f"velocity_{account_id}_{i}_{random.randint(1000, 9999)}",
+            account_id=account_id,
+            amount=round(random.uniform(150, 400), 2),
+            date=velocity_date.isoformat(),
+            merchant_name=random.choice(["Amazon", "Target", "Walmart"]),
+            category="Shopping",
+            created_at=datetime.utcnow()
+        ))
+    
+    # Amount anomaly: Unusually high transaction
+    amount_date = today - timedelta(days=random.randint(5, 20))
+    transactions.append(Transaction(
+        plaid_transaction_id=f"high_amount_{account_id}_{random.randint(1000, 9999)}",
+        account_id=account_id,
+        amount=round(random.uniform(5000, 8500), 2),
+        date=amount_date.isoformat(),
+        merchant_name="Luxury Retailer",
+        category="Shopping",
+        created_at=datetime.utcnow()
+    ))
+    
+    # Duplicate transactions
+    dup_date = today - timedelta(days=random.randint(15, 40))
+    dup_amount = round(random.uniform(75, 150), 2)
+    dup_merchant = random.choice(["Shell Gas Station", "Starbucks", "Chipotle"])
+    for i in range(2):
+        transactions.append(Transaction(
+            plaid_transaction_id=f"duplicate_{account_id}_{i}_{random.randint(1000, 9999)}",
+            account_id=account_id,
+            amount=dup_amount,
+            date=dup_date.isoformat(),
+            merchant_name=dup_merchant,
+            category="Food and Drink",
+            created_at=datetime.utcnow()
+        ))
+    
+    # Geographic anomaly: Unusual merchant
+    geo_date = today - timedelta(days=random.randint(25, 50))
+    transactions.append(Transaction(
+        plaid_transaction_id=f"geographic_{account_id}_{random.randint(1000, 9999)}",
+        account_id=account_id,
+        amount=round(random.uniform(200, 600), 2),
+        date=geo_date.isoformat(),
+        merchant_name="International Merchant XYZ",
+        category="Travel",
+        created_at=datetime.utcnow()
+    ))
     
     return transactions
 
@@ -341,7 +469,15 @@ def generate_multi_account_data(days: int = 90) -> None:
             all_transactions.extend(txns)
             print(f"   ✅ {persona['name']}: {len(txns)} transactions")
         
-        # Step 4: Generate fraud ring transactions
+        # Step 4: Generate anomalous transactions for each account
+        print("\n⚠️  Injecting anomalous transactions...")
+        for i, persona in enumerate(PERSONAS):
+            account = accounts_created[i]
+            anomaly_txns = generate_anomalous_transactions(account.id, days)
+            all_transactions.extend(anomaly_txns)
+            print(f"   ✅ {persona['name']}: {len(anomaly_txns)} anomalies injected")
+        
+        # Step 5: Generate fraud ring transactions
         print("\n🚨 Generating fraud ring transactions...")
         fraud_ring_txns = generate_fraud_ring_transactions(
             [fa.id for fa in fraud_accounts],
@@ -350,7 +486,7 @@ def generate_multi_account_data(days: int = 90) -> None:
         all_transactions.extend(fraud_ring_txns)
         print(f"   ✅ Fraud ring: {len(fraud_ring_txns)} coordinated transactions")
         
-        # Step 5: Insert all transactions
+        # Step 6: Insert all transactions
         print("\n💾 Inserting transactions into database...")
         for txn in all_transactions:
             db.add(txn)
@@ -358,12 +494,13 @@ def generate_multi_account_data(days: int = 90) -> None:
         db.commit()
         print(f"   ✅ Inserted {len(all_transactions)} transactions")
         
-        # Step 6: Update vendor profiles
+        # Step 7: Update vendor profiles
         print("\n🔄 Computing vendor profiles...")
         update_vendor_profiles(db)
         print("   ✅ Vendor profiles updated")
         
         # Summary
+        total_anomalies = len(fraud_ring_txns) + (len(PERSONAS) * 9)  # 9 anomalies per persona
         print("\n" + "=" * 60)
         print("✨ Multi-Account Dataset Generation Complete!")
         print("=" * 60)
@@ -372,6 +509,7 @@ def generate_multi_account_data(days: int = 90) -> None:
         print(f"   Accounts: {len(accounts_created) + len(fraud_accounts)}")
         print(f"   Account Links: 3 (1 family, 1 business, 1 suspicious)")
         print(f"   Transactions: {len(all_transactions)}")
+        print(f"   Anomalies Injected: ~{total_anomalies}")
         print(f"   Date Range: {days} days")
         print(f"\n🎯 User Personas:")
         for persona in PERSONAS:
@@ -379,6 +517,12 @@ def generate_multi_account_data(days: int = 90) -> None:
         print(f"\n🚨 Fraud Ring:")
         print(f"   - 2 suspicious accounts with shared_ip link")
         print(f"   - {len(fraud_ring_txns)} coordinated high-value transactions")
+        print(f"\n⚠️  Anomaly Types Injected:")
+        print(f"   - Velocity anomalies (burst spending)")
+        print(f"   - Amount anomalies (unusually high)")
+        print(f"   - Duplicate transactions")
+        print(f"   - Geographic anomalies (unusual merchants)")
+        print(f"   - Fraud ring patterns (coordinated)")
         print(f"\n🎯 Next Steps:")
         print(f"   1. Run fraud ring detection: curl -X GET http://localhost:8000/api/v1/rings")
         print(f"   2. View accounts: curl -X GET http://localhost:8000/api/v1/accounts")
