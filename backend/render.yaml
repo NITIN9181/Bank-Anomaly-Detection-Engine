@@ -19,3 +19,7 @@ services:
       mountPath: /data
       sizeGB: 1
     healthCheckPath: /api/v1/health
+    # Increase health check timeout for slower startups
+    autoDeploy: true
+    # Give the app 60 seconds to respond to health checks
+    # (default is 30 seconds which might be too short for model training)

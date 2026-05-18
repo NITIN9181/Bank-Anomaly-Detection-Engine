@@ -83,6 +83,9 @@ async def startup_event() -> None:
     
     - Creates database tables if they don't exist
     - Starts transaction ingestion scheduler
+    
+    Note: Model training is deferred to first detection run to speed up startup
+    and pass Render health checks faster.
     """
     logger.info("Starting Bank Anomaly Detection Engine")
     
@@ -90,13 +93,16 @@ async def startup_event() -> None:
     create_tables()
     logger.info("Database tables initialized")
     
-    # Start ingestion scheduler
+    # Start ingestion scheduler (lightweight, non-blocking)
     try:
         from ingestion.pipeline import start_ingestion
         start_ingestion()
         logger.info("Transaction ingestion scheduler started")
     except Exception as e:
         logger.error(f"Failed to start ingestion scheduler: {e}")
+    
+    logger.info("Startup complete - ready to accept requests")
+    logger.info("Note: ML model will be trained on first detection run")
 
 
 @app.on_event("shutdown")
@@ -114,6 +120,21 @@ async def shutdown_event() -> None:
         logger.info("Transaction ingestion scheduler stopped")
     except Exception as e:
         logger.error(f"Error stopping ingestion scheduler: {e}")
+
+
+@app.get("/")
+async def root() -> dict[str, Any]:
+    """
+    Root endpoint - quick health check for deployment platforms.
+    
+    Returns:
+        Basic status information
+    """
+    return {
+        "service": "Bank Anomaly Detection Engine",
+        "status": "running",
+        "version": "1.0.0"
+    }
 
 
 @app.get("/api/v1/health")
