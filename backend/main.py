@@ -7,6 +7,7 @@ Provides RESTful API endpoints for transaction management and anomaly detection.
 from __future__ import annotations
 
 import logging
+import threading
 from datetime import datetime
 from typing import Any
 import asyncio
@@ -216,6 +217,8 @@ detection_status = {
     "last_run": None,
     "last_result": None
 }
+# Lock to protect detection_status from concurrent read/write races
+_detection_status_lock = threading.Lock()
 
 # Thread pool for background tasks
 executor = ThreadPoolExecutor(max_workers=2)
@@ -228,7 +231,8 @@ def run_detection_background(db_session):
     global detection_status
     
     try:
-        detection_status["running"] = True
+        with _detection_status_lock:
+            detection_status["running"] = True
         logger.info("Background detection started")
         
         # Run detection pipeline
@@ -248,18 +252,21 @@ def run_detection_background(db_session):
             "completed_at": datetime.utcnow().isoformat() + "Z"
         }
         
-        detection_status["last_result"] = result
-        detection_status["last_run"] = datetime.utcnow()
+        with _detection_status_lock:
+            detection_status["last_result"] = result
+            detection_status["last_run"] = datetime.utcnow()
         logger.info(f"Background detection completed: {result}")
         
     except Exception as e:
         logger.error(f"Background detection failed: {e}", exc_info=True)
-        detection_status["last_result"] = {
-            "error": str(e),
-            "completed_at": datetime.utcnow().isoformat() + "Z"
-        }
+        with _detection_status_lock:
+            detection_status["last_result"] = {
+                "error": str(e),
+                "completed_at": datetime.utcnow().isoformat() + "Z"
+            }
     finally:
-        detection_status["running"] = False
+        with _detection_status_lock:
+            detection_status["running"] = False
         db_session.close()
 
 
@@ -281,8 +288,7 @@ async def trigger_detection(background_tasks: BackgroundTasks) -> dict[str, Any]
             "status": "already_running",
             "message": "Detection is already in progress",
             "started_at": detection_status.get("last_run")
-        }
-    
+        }    
     logger.info("Manual detection triggered via API - running in background")
     
     # Create a new database session for the background task
@@ -356,8 +362,8 @@ async def list_anomalies(
     # Serialize results
     items = []
     for a in anomalies:
-        # Get transaction via relationship
-        txn = db.query(Transaction).get(a.transaction_id)
+        # Use the already-loaded relationship instead of a second query
+        txn = a.transaction
         
         items.append({
             "id": a.id,

@@ -109,6 +109,9 @@ def train_isolation_forest(
     """
     logger.info(f"Training Isolation Forest on {len(transactions)} transactions")
     
+    if not transactions:
+        raise ValueError("Cannot train Isolation Forest: no transactions provided")
+    
     # Extract all unique merchant names for encoding
     all_merchants = list(set(
         txn.merchant_name for txn in transactions if txn.merchant_name

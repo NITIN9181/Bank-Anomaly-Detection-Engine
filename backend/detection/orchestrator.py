@@ -58,9 +58,9 @@ def run_detection(db: Session) -> list[Anomaly]:
     
     # Step 3: Find unprocessed transactions (not in anomalies table)
     from sqlalchemy import select
-    subquery = select(Anomaly.transaction_id).subquery()
+    processed_ids = select(Anomaly.transaction_id)
     unprocessed = db.query(Transaction).filter(
-        ~Transaction.id.in_(select(subquery.c.transaction_id))
+        ~Transaction.id.in_(processed_ids)
     ).all()
     
     logger.info(f"Found {len(unprocessed)} unprocessed transactions")

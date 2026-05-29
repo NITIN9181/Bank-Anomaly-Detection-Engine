@@ -21,12 +21,16 @@ def compute_confidence(detection_results: dict) -> dict:
     else:
         stat_conf = min(0.99, 1 / (1 + math.exp(-(abs(z_score) - 3))))
     
-    # ML layer confidence: based on isolation score distance from threshold
+    # ML layer confidence: based on how far below the anomaly threshold (-0.15) the score is.
+    # Scores above the threshold are not anomalous, so confidence should be low.
     if abs(isolation_score) < 0.01:
         ml_conf = 0.05
+    elif isolation_score > -0.15:
+        # Score is above threshold — not flagged by ML layer
+        ml_conf = 0.05
     else:
-        ml_conf = min(0.99, abs(isolation_score - (-0.15)) / 0.5)
-    
+        # Score is below threshold — confidence scales with distance below -0.15
+        ml_conf = min(0.99, abs(isolation_score + 0.15) / 0.5)
     # Duplicate layer: binary 0 or 1
     dup_conf = 1.0 if dup_triggered else 0.0
     

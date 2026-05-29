@@ -24,8 +24,8 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/graph", tags=["graph"])
 
 # Simple in-memory cache (30 seconds TTL)
-_cache: dict[str, Any] = {}
-_cache_timestamp: datetime | None = None
+# Key: cache_key string → value: (result_dict, timestamp)
+_cache: dict[str, tuple[dict[str, Any], datetime]] = {}
 CACHE_TTL_SECONDS = 30
 
 
@@ -56,17 +56,15 @@ async def get_network_graph(
     Returns:
         Graph data with nodes, edges, rings, and metadata
     """
-    global _cache, _cache_timestamp
+    global _cache
     
-    # Check cache
+    # Check cache — each key has its own timestamp to avoid cross-key staleness
     cache_key = f"network_{window_hours}"
-    if (
-        _cache_timestamp
-        and (datetime.utcnow() - _cache_timestamp).total_seconds() < CACHE_TTL_SECONDS
-        and cache_key in _cache
-    ):
-        logger.info("Returning cached graph data")
-        return _cache[cache_key]
+    if cache_key in _cache:
+        cached_result, cached_at = _cache[cache_key]
+        if (datetime.utcnow() - cached_at).total_seconds() < CACHE_TTL_SECONDS:
+            logger.info("Returning cached graph data")
+            return cached_result
     
     logger.info(f"Building network graph (window={window_hours}h)")
     
@@ -99,9 +97,8 @@ async def get_network_graph(
         "metadata": metadata
     }
     
-    # Update cache
-    _cache[cache_key] = result
-    _cache_timestamp = datetime.utcnow()
+    # Update cache — store result alongside its own timestamp
+    _cache[cache_key] = (result, datetime.utcnow())
     
     logger.info(f"Graph built: {len(nodes)} nodes, {len(edges)} edges, {len(rings)} rings")
     
@@ -146,7 +143,12 @@ async def build_nodes(db: Session) -> list[dict[str, Any]]:
                 persona = "techstart"
         
         # Initial risk score (will be updated later)
-        risk_score = 0.15 if user and user.risk_profile == "low" else 0.5
+        if user and user.risk_profile == "low":
+            risk_score = 0.15
+        elif user and user.risk_profile == "high":
+            risk_score = 0.75
+        else:
+            risk_score = 0.5
         
         nodes.append({
             "id": account.account_id,
@@ -216,6 +218,8 @@ async def build_edges(db: Session, window_hours: int) -> list[dict[str, Any]]:
             total_amount = 0.0
             time_clustered_txns = 0
             velocity_score = link.strength * 0.3
+            common_txns_a = []
+            common_txns_b = []
         else:
             # Calculate metrics based on common merchant activity
             common_txns_a = [t for t in txns_a if t.merchant_name in common_merchants]

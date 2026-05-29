@@ -119,9 +119,9 @@ async def explain_all_new_anomalies(db: Session) -> int:
     Returns:
         Count of anomalies that received explanations
     """
-    # Find anomalies without explanations
+    # Find anomalies without explanations (None or empty string)
     anomalies = db.query(Anomaly).filter(
-        Anomaly.explanation.is_(None)
+        (Anomaly.explanation.is_(None)) | (Anomaly.explanation == "")
     ).all()
     
     if not anomalies:
